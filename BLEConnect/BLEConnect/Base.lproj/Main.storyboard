@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<document type="com.apple.InterfaceBuilder3.CocoaTouch.Storyboard.XIB" version="3.0" toolsVersion="10117" systemVersion="15G31" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none" useAutolayout="YES" useTraitCollections="YES" initialViewController="Pe8-9V-458">
+    <dependencies>
+        <deployment identifier="iOS"/>
+        <plugIn identifier="com.apple.InterfaceBuilder.IBCocoaTouchPlugin" version="10085"/>
+    </dependencies>
+    <scenes>
+        <!--Central-->
+        <scene sceneID="4BI-Et-E7S">
+            <objects>
+                <viewController id="poF-Qk-TC9" customClass="CentralManagerViewController" customModule="BLEConnect" customModuleProvider="target" sceneMemberID="viewController">
+                    <layoutGuides>
+                        <viewControllerLayoutGuide type="top" id="MLa-Pt-yrF"/>
+                        <viewControllerLayoutGuide type="bottom" id="2kU-BB-s8M"/>
+                    </layoutGuides>
+                    <view key="view" contentMode="scaleToFill" id="Smo-fL-lcy">
+                        <rect key="frame" x="0.0" y="0.0" width="600" height="600"/>
+                        <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
+                        <color key="backgroundColor" white="1" alpha="1" colorSpace="calibratedWhite"/>
+                    </view>
+                    <navigationItem key="navigationItem" title="Central" id="18l-EL-aRF"/>
+                </viewController>
+                <placeholder placeholderIdentifier="IBFirstResponder" id="yC2-bq-lQc" userLabel="First Responder" sceneMemberID="firstResponder"/>
+            </objects>
+            <point key="canvasLocation" x="2077" y="793"/>
+        </scene>
+        <!--Select Mode-->
+        <scene sceneID="tne-QT-ifu">
+            <objects>
+                <viewController id="BYZ-38-t0r" customClass="ManagerSelectionViewController" customModule="BLEConnect" customModuleProvider="target" sceneMemberID="viewController">
+                    <layoutGuides>
+                        <viewControllerLayoutGuide type="top" id="y3c-jy-aDJ"/>
+                        <viewControllerLayoutGuide type="bottom" id="wfy-db-euE"/>
+                    </layoutGuides>
+                    <view key="view" contentMode="scaleToFill" id="8bC-Xf-vdC">
+                        <rect key="frame" x="0.0" y="0.0" width="600" height="600"/>
+                        <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
+                        <subviews>
+                            <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="roundedRect" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="fC0-Fh-c4E">
+                                <rect key="frame" x="250" y="221" width="100" height="30"/>
+                                <constraints>
+                                    <constraint firstAttribute="width" constant="100" id="Jyl-fF-yLm"/>
+                                    <constraint firstAttribute="height" constant="30" id="OHY-2I-UiF"/>
+                                </constraints>
+                                <state key="normal" title="Central"/>
+                                <connections>
+                                    <action selector="handleCentralButtonTapped:" destination="BYZ-38-t0r" eventType="touchUpInside" id="3R7-Dq-e69"/>
+                                </connections>
+                            </button>
+                            <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="roundedRect" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="ZI8-ck-Cc0">
+                                <rect key="frame" x="250" y="259" width="100" height="30"/>
+                                <constraints>
+                                    <constraint firstAttribute="width" constant="100" id="SFQ-1O-31Z"/>
+                                </constraints>
+                                <state key="normal" title="Peripheral"/>
+                                <connections>
+                                    <action selector="handlePeripheralButtonTapped:" destination="BYZ-38-t0r" eventType="touchUpInside" id="GPu-2a-ic2"/>
+                                </connections>
+                            </button>
+                        </subviews>
+                        <color key="backgroundColor" white="1" alpha="1" colorSpace="custom" customColorSpace="calibratedWhite"/>
+                        <constraints>
+                            <constraint firstItem="ZI8-ck-Cc0" firstAttribute="centerX" secondItem="8bC-Xf-vdC" secondAttribute="centerX" id="4I7-L7-9aa"/>
+                            <constraint firstItem="fC0-Fh-c4E" firstAttribute="centerX" secondItem="8bC-Xf-vdC" secondAttribute="centerX" id="FlR-fa-MWe"/>
+                            <constraint firstItem="ZI8-ck-Cc0" firstAttribute="top" secondItem="fC0-Fh-c4E" secondAttribute="bottom" constant="8" id="NxG-8v-2dM"/>
+                            <constraint firstItem="fC0-Fh-c4E" firstAttribute="centerY" secondItem="8bC-Xf-vdC" secondAttribute="centerY" constant="-64" id="bBq-fU-QGa"/>
+                        </constraints>
+                    </view>
+                    <navigationItem key="navigationItem" title="Select Mode" id="8X1-kS-S2c"/>
+                    <connections>
+                        <segue destination="poF-Qk-TC9" kind="show" identifier="showCentralManagerViewController" id="1k7-B3-I37"/>
+                        <segue destination="Nb9-nQ-jc5" kind="show" identifier="showPeripheralManagerViewController" id="clS-iU-Eh0"/>
+                    </connections>
+                </viewController>
+                <placeholder placeholderIdentifier="IBFirstResponder" id="dkx-z0-nzr" sceneMemberID="firstResponder"/>
+            </objects>
+            <point key="canvasLocation" x="1323" y="1120"/>
+        </scene>
+        <!--Peripheral-->
+        <scene sceneID="pVq-DD-zXP">
+            <objects>
+                <viewController id="Nb9-nQ-jc5" customClass="PeripheralManagerViewController" customModule="BLEConnect" customModuleProvider="target" sceneMemberID="viewController">
+                    <layoutGuides>
+                        <viewControllerLayoutGuide type="top" id="Eaz-Q8-iN0"/>
+                        <viewControllerLayoutGuide type="bottom" id="oRu-pg-k7d"/>
+                    </layoutGuides>
+                    <view key="view" contentMode="scaleToFill" id="k3W-Oz-rPi">
+                        <rect key="frame" x="0.0" y="0.0" width="600" height="600"/>
+                        <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
+                        <color key="backgroundColor" white="1" alpha="1" colorSpace="calibratedWhite"/>
+                    </view>
+                    <navigationItem key="navigationItem" title="Peripheral" id="afd-7J-bB5"/>
+                </viewController>
+                <placeholder placeholderIdentifier="IBFirstResponder" id="Lsa-AS-GFm" userLabel="First Responder" sceneMemberID="firstResponder"/>
+            </objects>
+            <point key="canvasLocation" x="2077" y="1546"/>
+        </scene>
+        <!--Navigation Controller-->
+        <scene sceneID="kW4-UA-pOv">
+            <objects>
+                <navigationController automaticallyAdjustsScrollViewInsets="NO" id="Pe8-9V-458" sceneMemberID="viewController">
+                    <toolbarItems/>
+                    <navigationBar key="navigationBar" contentMode="scaleToFill" id="wSD-XI-Cj5">
+                        <rect key="frame" x="0.0" y="0.0" width="320" height="44"/>
+                        <autoresizingMask key="autoresizingMask"/>
+                    </navigationBar>
+                    <nil name="viewControllers"/>
+                    <connections>
+                        <segue destination="BYZ-38-t0r" kind="relationship" relationship="rootViewController" id="46H-aF-Ekz"/>
+                    </connections>
+                </navigationController>
+                <placeholder placeholderIdentifier="IBFirstResponder" id="jWC-Mo-sCJ" userLabel="First Responder" sceneMemberID="firstResponder"/>
+            </objects>
+            <point key="canvasLocation" x="565" y="1120"/>
+        </scene>
+    </scenes>
+</document>
