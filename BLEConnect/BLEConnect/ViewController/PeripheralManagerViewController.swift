@@ -99,6 +99,23 @@ class PeripheralManagerViewController: UIViewController, CBPeripheralManagerDele
         sendData()
     }
     
+    /*
+     Invoked when a local peripheral device is again ready to send characteristic value updates.
+     
+     When a call to the updateValue:forCharacteristic:onSubscribedCentrals: method fails because
+     the underlying queue used to transmit the updated characteristic value is full, the 
+     peripheralManagerIsReadyToUpdateSubscribers: method is invoked when more space in the 
+     transmit queue becomes available. 
+     
+     You can then implement this delegate method to resend the value.
+     */
+    func peripheralManagerIsReadyToUpdateSubscribers(peripheral: CBPeripheralManager) {
+        /** This callback comes in when the PeripheralManager is ready to send the next chunk of data.
+         *  This is to ensure that packets will arrive in the order they are sent
+         */
+        sendData()
+    }
+    
     
     // MARK: Transfer Methods
     
