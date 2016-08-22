@@ -23,7 +23,6 @@ class PeripheralManagerViewController: UIViewController, CBPeripheralManagerDele
     
     override func viewDidLoad() {
         super.viewDidLoad()
-        self.textView.text = ""
         self.advertisingSwitch.on = false
         
         self.textView.layer.borderColor = UIColor.lightGrayColor().CGColor
@@ -39,14 +38,22 @@ class PeripheralManagerViewController: UIViewController, CBPeripheralManagerDele
         super.viewWillDisappear(animated)
     }
     
+    
+    // MARK: - Handling User Interactions
+    
     @IBAction func handleAdvertisingSwitchValueChanged(sender: UISwitch) {
         print("switch: \(sender.on ? "ON" : "OFF")")
         if sender.on {
+            print("Peripheral Manager: Starting Advertising Transfer Service (\(Device.TransferService))")
             peripheralManager.startAdvertising([CBAdvertisementDataServiceUUIDsKey : [CBUUID.init(string: Device.TransferService)]])
         } else {
+            print("Peripheral Manager: Stopping Advertising!!!")
             peripheralManager.stopAdvertising()
         }
     }
+    
+    
+    // MARK: - CBPeripheralManagerDelegate Methods
     
     /*
      Invoked when the peripheral manager’s state is updated. (required)
@@ -54,12 +61,14 @@ class PeripheralManagerViewController: UIViewController, CBPeripheralManagerDele
      */
     func peripheralManagerDidUpdateState(peripheral: CBPeripheralManager) {
         
+        print("Peripheral Manager State Updated: \(peripheral.state)")
+
         // bail out if peripheral is not powered on
         if peripheral.state != .PoweredOn {
             return
         }
         
-        print("Peripheral powered on")
+        print("Bluetooth is Powered Up!!!")
         
         // Build Peripheral Service: first, create service characteristic
         self.transferCharacteristic = CBMutableCharacteristic(type: CBUUID.init(string: Device.TransferCharacteristic), properties: .Notify, value: nil, permissions: .Readable)
