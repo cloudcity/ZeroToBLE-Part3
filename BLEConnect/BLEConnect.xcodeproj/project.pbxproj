@@ -15,6 +15,7 @@
 		C839EA471D5E84ED00B264D9 /* ManagerSelectionViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = C839EA461D5E84ED00B264D9 /* ManagerSelectionViewController.swift */; };
 		C839EA491D5E84FF00B264D9 /* CentralManagerViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = C839EA481D5E84FF00B264D9 /* CentralManagerViewController.swift */; };
 		C839EA4B1D5E851200B264D9 /* PeripheralManagerViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = C839EA4A1D5E851200B264D9 /* PeripheralManagerViewController.swift */; };
+		C8FE924C1D6B7DC30043DA1A /* UIColorExtensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8FE924B1D6B7DC30043DA1A /* UIColorExtensions.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -28,6 +29,7 @@
 		C839EA461D5E84ED00B264D9 /* ManagerSelectionViewController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = ManagerSelectionViewController.swift; path = ViewController/ManagerSelectionViewController.swift; sourceTree = "<group>"; };
 		C839EA481D5E84FF00B264D9 /* CentralManagerViewController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = CentralManagerViewController.swift; path = ViewController/CentralManagerViewController.swift; sourceTree = "<group>"; };
 		C839EA4A1D5E851200B264D9 /* PeripheralManagerViewController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = PeripheralManagerViewController.swift; path = ViewController/PeripheralManagerViewController.swift; sourceTree = "<group>"; };
+		C8FE924B1D6B7DC30043DA1A /* UIColorExtensions.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = UIColorExtensions.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -69,6 +71,7 @@
 				C839EA3C1D5E843F00B264D9 /* LaunchScreen.storyboard */,
 				C839EA3F1D5E843F00B264D9 /* Info.plist */,
 				C82D0F1D1D627B15005250B6 /* Device.swift */,
+				C8FE924B1D6B7DC30043DA1A /* UIColorExtensions.swift */,
 			);
 			path = BLEConnect;
 			sourceTree = "<group>";
@@ -147,6 +150,7 @@
 				C839EA491D5E84FF00B264D9 /* CentralManagerViewController.swift in Sources */,
 				C839EA471D5E84ED00B264D9 /* ManagerSelectionViewController.swift in Sources */,
 				C839EA4B1D5E851200B264D9 /* PeripheralManagerViewController.swift in Sources */,
+				C8FE924C1D6B7DC30043DA1A /* UIColorExtensions.swift in Sources */,
 				C839EA341D5E843F00B264D9 /* AppDelegate.swift in Sources */,
 				C82D0F1E1D627B15005250B6 /* Device.swift in Sources */,
 			);
