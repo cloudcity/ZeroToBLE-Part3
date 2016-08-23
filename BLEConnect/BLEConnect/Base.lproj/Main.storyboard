@@ -48,20 +48,41 @@
                                 <color key="textColor" red="0.0" green="0.0" blue="0.0" alpha="1" colorSpace="calibratedRGB"/>
                                 <nil key="highlightedColor"/>
                             </label>
+                            <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="AU2-Oo-BR1">
+                                <rect key="frame" x="20" y="331" width="560" height="65"/>
+                                <color key="backgroundColor" white="1" alpha="1" colorSpace="calibratedWhite"/>
+                                <constraints>
+                                    <constraint firstAttribute="height" constant="65" id="wuk-Eq-yJI"/>
+                                </constraints>
+                            </view>
+                            <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="roundedRect" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="HRp-z4-u73">
+                                <rect key="frame" x="250" y="404" width="100" height="30"/>
+                                <constraints>
+                                    <constraint firstAttribute="height" constant="30" id="XgZ-3z-xYg"/>
+                                    <constraint firstAttribute="width" constant="100" id="xNY-2e-y3u"/>
+                                </constraints>
+                                <state key="normal" title="Get Color"/>
+                            </button>
                         </subviews>
                         <color key="backgroundColor" white="1" alpha="1" colorSpace="calibratedWhite"/>
                         <constraints>
+                            <constraint firstItem="AU2-Oo-BR1" firstAttribute="trailing" secondItem="Smo-fL-lcy" secondAttribute="trailingMargin" id="8kw-qP-LmD"/>
                             <constraint firstItem="n8B-Dl-Ftp" firstAttribute="trailing" secondItem="Smo-fL-lcy" secondAttribute="trailingMargin" id="9Bv-Vv-AvX"/>
+                            <constraint firstItem="AU2-Oo-BR1" firstAttribute="leading" secondItem="Smo-fL-lcy" secondAttribute="leadingMargin" id="FTb-GX-zNL"/>
+                            <constraint firstItem="HRp-z4-u73" firstAttribute="centerX" secondItem="Smo-fL-lcy" secondAttribute="centerX" id="Mnz-BJ-ajA"/>
                             <constraint firstItem="n8B-Dl-Ftp" firstAttribute="leading" secondItem="Cc2-aa-lEJ" secondAttribute="trailing" constant="6" id="Mvo-Ew-yBJ"/>
                             <constraint firstItem="lKl-vW-XHr" firstAttribute="top" secondItem="MLa-Pt-yrF" secondAttribute="bottom" constant="40" id="NOB-XC-Ldo"/>
                             <constraint firstItem="lKl-vW-XHr" firstAttribute="trailing" secondItem="Smo-fL-lcy" secondAttribute="trailingMargin" id="TCn-Eh-cS0"/>
                             <constraint firstItem="Cc2-aa-lEJ" firstAttribute="top" secondItem="MLa-Pt-yrF" secondAttribute="bottom" constant="17" id="Vud-Uj-cbt"/>
                             <constraint firstItem="n8B-Dl-Ftp" firstAttribute="top" secondItem="MLa-Pt-yrF" secondAttribute="bottom" constant="17" id="WUU-zQ-ZL2"/>
+                            <constraint firstItem="HRp-z4-u73" firstAttribute="top" secondItem="AU2-Oo-BR1" secondAttribute="bottom" constant="8" id="ePV-eA-cso"/>
                             <constraint firstItem="lKl-vW-XHr" firstAttribute="leading" secondItem="Smo-fL-lcy" secondAttribute="leadingMargin" id="nKo-Av-h2x"/>
+                            <constraint firstItem="AU2-Oo-BR1" firstAttribute="top" secondItem="lKl-vW-XHr" secondAttribute="bottom" constant="10" id="zY9-hE-oWn"/>
                         </constraints>
                     </view>
                     <navigationItem key="navigationItem" title="Central" id="18l-EL-aRF"/>
                     <connections>
+                        <outlet property="colorView" destination="AU2-Oo-BR1" id="syI-PF-PhU"/>
                         <outlet property="rssiLabel" destination="n8B-Dl-Ftp" id="rP2-AV-G7Q"/>
                         <outlet property="textView" destination="lKl-vW-XHr" id="Iqi-Za-cRZ"/>
                     </connections>
@@ -137,24 +158,23 @@
                         <rect key="frame" x="0.0" y="0.0" width="600" height="600"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                         <subviews>
-                            <textView clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="scaleToFill" textAlignment="natural" translatesAutoresizingMaskIntoConstraints="NO" id="8WM-Op-U1x">
-                                <rect key="frame" x="20" y="104" width="560" height="128"/>
+                            <textView clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="scaleToFill" text="Enter your message here to be transmitted via Bluetooth Low Energy to a Central Device!" textAlignment="natural" translatesAutoresizingMaskIntoConstraints="NO" id="8WM-Op-U1x">
+                                <rect key="frame" x="20" y="104" width="560" height="100"/>
                                 <color key="backgroundColor" white="1" alpha="1" colorSpace="calibratedWhite"/>
                                 <constraints>
-                                    <constraint firstAttribute="height" constant="128" id="qTY-dx-eSr"/>
+                                    <constraint firstAttribute="height" constant="100" id="qTY-dx-eSr"/>
                                 </constraints>
-                                <string key="text">Lorem ipsum dolor sit er elit lamet, consectetaur cillium adipisicing pecu, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum. Nam liber te conscient to factor tum poen legum odioque civiuda.</string>
                                 <fontDescription key="fontDescription" type="system" pointSize="14"/>
                                 <textInputTraits key="textInputTraits" autocapitalizationType="sentences"/>
                             </textView>
                             <switch opaque="NO" contentMode="scaleToFill" horizontalHuggingPriority="750" verticalHuggingPriority="750" contentHorizontalAlignment="center" contentVerticalAlignment="center" translatesAutoresizingMaskIntoConstraints="NO" id="gSm-hM-aMr">
-                                <rect key="frame" x="531" y="240" width="51" height="31"/>
+                                <rect key="frame" x="531" y="212" width="51" height="31"/>
                                 <connections>
                                     <action selector="handleAdvertisingSwitchValueChanged:" destination="Nb9-nQ-jc5" eventType="valueChanged" id="MBH-bB-px1"/>
                                 </connections>
                             </switch>
                             <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Advertising" textAlignment="right" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="R65-hX-M9P">
-                                <rect key="frame" x="293" y="245" width="230" height="21"/>
+                                <rect key="frame" x="293" y="217" width="230" height="21"/>
                                 <constraints>
                                     <constraint firstAttribute="height" constant="21" id="Lm9-av-ZvX"/>
                                     <constraint firstAttribute="width" constant="230" id="pe6-nC-K8K"/>

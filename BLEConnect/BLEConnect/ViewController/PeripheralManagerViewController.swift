@@ -20,6 +20,9 @@ class PeripheralManagerViewController: UIViewController, CBPeripheralManagerDele
     var sendDataIndex = 0
     let notifyMTU = 20
     var sendingEOM = false
+    var contentUpdated = false
+    var currentTextSnapshot = ""
+    var sendingTextData = false
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -27,6 +30,7 @@ class PeripheralManagerViewController: UIViewController, CBPeripheralManagerDele
         
         self.textView.layer.borderColor = UIColor.lightGrayColor().CGColor
         self.textView.layer.borderWidth = 1.0
+        self.textView.delegate = self
         
         // create and start the peripheral manager
         self.peripheralManager = CBPeripheralManager(delegate: self, queue: nil)
@@ -51,7 +55,146 @@ class PeripheralManagerViewController: UIViewController, CBPeripheralManagerDele
             peripheralManager.stopAdvertising()
         }
     }
+
     
+    // MARK: Data Transfer Methods
+    
+    func resetData() {
+        print("Resetting Data...")
+        currentTextSnapshot = ""
+        dataToSend = nil
+        sendDataIndex = 0
+    }
+    
+    func captureCurrentText() {
+        print("captureCurrentText")
+
+        // if we are not advertising, just bail.
+        if !advertisingSwitch.on {
+            resetData()
+            return
+        }
+        
+        // if we are not sending right now, capture the current state
+        if !sendingTextData {
+            print("Not currently sending data. Capturing snapshot and will send it over!")
+            currentTextSnapshot = textView.text
+            dataToSend = currentTextSnapshot.dataUsingEncoding(NSUTF8StringEncoding)
+            sendDataIndex = 0
+            sendTextData()
+        } else {
+            print("Currently sending data. Will wait to capture in a second...")
+        }
+        
+        // set a timer to check again in 1 second...
+        _ = NSTimer(timeInterval: 1.0, target: self, selector: #selector(captureCurrentText), userInfo: nil, repeats: false)
+    }
+    
+    func sendTextData() {
+        print("Attempting to send data...")
+        
+        guard let peripheralManager = self.peripheralManager else {
+            print("No peripheral manager!!!")
+            return
+        }
+        
+        guard let transferCharacteristic = self.transferCharacteristic else {
+            print("No transfer characteristic available!!!")
+            return
+        }
+        
+        // Is it time for the EOM message?
+        if sendingEOM {
+            print("Attempting to send EOM...")
+            
+            let didSend = peripheralManager.updateValue(Device.EOM.dataUsingEncoding(NSUTF8StringEncoding)!, forCharacteristic: transferCharacteristic, onSubscribedCentrals: nil)
+            if didSend {
+                sendingEOM = false
+                print("EOM Sent!!!")
+                sendingTextData = false
+            }
+            
+            // Return and wait for peripheralManagerIsReadyToUpdateSubscribers to call sendTextData again
+            return
+        }
+        
+        
+        // Since we're not sending an EOM message, we'll send data
+        // check to see if we actually have any data to send (return if nil)...
+        guard let dataToSend = dataToSend else {
+            return
+        }
+        
+        if sendDataIndex >= dataToSend.length {
+            return;
+        }
+        
+        // We have determined that there is data left to send, so we will send until the point at which either a) the callback fails or b) we're done.
+        var didSend = true
+        while didSend {
+            
+            // turn on our sending text flag to prevent updating the buffer until we're done
+            sendingTextData = true
+            
+            // ---- Prepare the next message chunk
+            print("Preparing next message chunk...")
+            
+            // Determine chunk size
+            var amountToSend = dataToSend.length - sendDataIndex
+            print("Next amout to send: \(amountToSend)")
+            
+            // we have a 20-byte limit, so if the amount to send is greater than 20, then clamp it down to 20.
+            if (amountToSend > Device.notifyMTU) {
+                amountToSend = Device.notifyMTU
+            }
+            
+            // extract the data we want to send
+            let chunk = NSData(bytes: dataToSend.bytes + sendDataIndex, length: amountToSend)
+            
+            let testChunk = String(data: chunk, encoding: NSUTF8StringEncoding)
+            print("Next Chunk from data: \(testChunk)")
+            
+            // Send it
+            // updateValue sends an updated characteristic value to one or more subscribed centrals via a notification.
+            // passing nil for the centrals notifies all subscribed centrals, but you can target specific ones if you need to.
+            didSend = peripheralManager.updateValue(chunk, forCharacteristic: transferCharacteristic, onSubscribedCentrals: nil)
+            
+            // If it didn't work, drop out and wait for the callback
+            if !didSend {
+                return
+            }
+            
+            if let stringFromData = String.init(data: chunk, encoding: NSUTF8StringEncoding) {
+                print("Sent: \(stringFromData)")
+            }
+            
+            // It did send, so update our index
+            self.sendDataIndex += amountToSend;
+            
+            // Determine if that was was the last chunk of data to send, and if so, send the EOM tag
+            if sendDataIndex >= dataToSend.length {
+                
+                // Set this so if the send fails, we'll send it next time
+                sendingEOM = true
+                
+                // Send the EOM tag
+                let eomData = Device.EOM.dataUsingEncoding(NSUTF8StringEncoding)!
+                let eomSent = peripheralManager.updateValue(eomData, forCharacteristic: transferCharacteristic, onSubscribedCentrals: nil)
+                if (eomSent) {
+                    // If the send was successful, then we're done, otherwise we'll send it next time
+                    sendingEOM = false
+                    print("Successfully sent EOM!!!");
+                    
+                    // turn off sending flag
+                    sendingTextData = false
+                }
+                
+                return;
+            }
+            
+        }
+    }
+
     
     // MARK: - CBPeripheralManagerDelegate Methods
     
@@ -93,19 +236,20 @@ class PeripheralManagerViewController: UIViewController, CBPeripheralManagerDele
     func peripheralManager(peripheral: CBPeripheralManager, central: CBCentral, didSubscribeToCharacteristic characteristic: CBCharacteristic) {
         print("Central has subscribed to characteristic: \(central)")
         
-        guard let text = self.textView.text else {
-            print("No text available to send.")
-            return
-        }
+//        guard let text = self.textView.text else {
+//            print("No text available to send.")
+//            return
+//        }
+//        
+//        // get the data
+//        dataToSend = text.dataUsingEncoding(NSUTF8StringEncoding)
+//        
+//        // reset the index
+//        sendDataIndex = 0
+//        
+//        // start sending data
+//        sendTextData()
         
-        // get the data
-        dataToSend = text.dataUsingEncoding(NSUTF8StringEncoding)
-        
-        // reset the index
-        sendDataIndex = 0
-        
-        // start sending data
-        sendData()
     }
     
     /*
@@ -119,118 +263,12 @@ class PeripheralManagerViewController: UIViewController, CBPeripheralManagerDele
      You can then implement this delegate method to resend the value.
      */
     func peripheralManagerIsReadyToUpdateSubscribers(peripheral: CBPeripheralManager) {
-        /** This callback comes in when the PeripheralManager is ready to send the next chunk of data.
-         *  This is to ensure that packets will arrive in the order they are sent
-         */
-        sendData()
+        // This callback comes in when the PeripheralManager is ready to send the next chunk of data.
+        // This is to ensure that packets will arrive in the order they are sent
+        sendTextData()
     }
     
     
-    // MARK: Transfer Methods
-    
-    /*
-     Sends the next chunk of data to the central
-     */
-    func sendData() {
-        print("Attempting to send data...")
-
-        guard let peripheralManager = self.peripheralManager else {
-            print("No peripheral manager!!!")
-            return
-        }
-        
-        guard let transferCharacteristic = self.transferCharacteristic else {
-            print("No transfer characteristic available!!!")
-            return
-        }
-        
-        // ---- Check if it's time for the EOM message
-        if sendingEOM {
-            print("Attempting to send EOM...")
-
-            let didSend = peripheralManager.updateValue(Device.EOM.dataUsingEncoding(NSUTF8StringEncoding)!, forCharacteristic: transferCharacteristic, onSubscribedCentrals: nil)
-            if didSend {
-                sendingEOM = false
-                print("EOM Sent!!!")
-            }
-            
-            // Return and wait for peripheralManagerIsReadyToUpdateSubscribers to call sendData again
-            return
-        }
-        
-        
-        // ---- Since we're not sending an EOM message, we'll send data
-        
-        // check to see if we actually have any data to send (return if nil)...
-        guard let dataToSend = dataToSend else {
-            return
-        }
-        
-        if sendDataIndex >= dataToSend.length {
-            return;
-        }
-        
-        // We have determined that there is data left to send, so we will send until the point at which either a) the callback fails or b) we're done.
-        var didSend = true
-        while didSend {
-            // ---- Prepare the next message chunk
-            print("Preparing next message chunk...")
-
-            // Determine chunk size
-            var amountToSend = dataToSend.length - sendDataIndex
-            print("Next amout to send: \(amountToSend)")
-            
-            // we have a 20-byte limit, so if the amount to send is greater than 20, then clamp it down to 20.
-            if (amountToSend > Device.notifyMTU) {
-                amountToSend = Device.notifyMTU
-            }
-            
-            // extract the data we want to send
-            let chunk = NSData(bytes: dataToSend.bytes + sendDataIndex, length: amountToSend)
-            
-            let testChunk = String(data: chunk, encoding: NSUTF8StringEncoding)
-            print("Next Chunk from data: \(testChunk)")
-            
-            // Send it
-            // updateValue sends an updated characteristic value to one or more subscribed centrals via a notification. 
-            // passing nil for the centrals notifies all subscribed centrals, but you can target specific ones if you need to.
-            didSend = peripheralManager.updateValue(chunk, forCharacteristic: transferCharacteristic, onSubscribedCentrals: nil)
-            
-            // If it didn't work, drop out and wait for the callback
-            if !didSend {
-                return
-            }
-            
-            if let stringFromData = String.init(data: chunk, encoding: NSUTF8StringEncoding) {
-                print("Sent: \(stringFromData)")
-            }
-            
-            // It did send, so update our index
-            self.sendDataIndex += amountToSend;
-            
-            // Determine if that was was the last chunk of data to send, and if so, send the EOM tag
-            if sendDataIndex >= dataToSend.length {
-                
-                // Set this so if the send fails, we'll send it next time
-                sendingEOM = true
-                
-                // Send the EOM tag
-                let eomData = Device.EOM.dataUsingEncoding(NSUTF8StringEncoding)!
-                let eomSent = peripheralManager.updateValue(eomData, forCharacteristic: transferCharacteristic, onSubscribedCentrals: nil)
-                if (eomSent) {
-                    // If the send was successful, then we're done, otherwise we'll send it next time
-                    sendingEOM = false
-                    print("Successfully sent EOM!!!");
-                }
-                
-                return;
-            }
-            
-        }
-    }
-    
-    
-
     /*
     // MARK: - Navigation
 

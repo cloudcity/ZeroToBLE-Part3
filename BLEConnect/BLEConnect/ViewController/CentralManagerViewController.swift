@@ -13,18 +13,23 @@ class CentralManagerViewController: UIViewController, CBCentralManagerDelegate, 
 
     @IBOutlet weak var textView: UITextView!
     @IBOutlet weak var rssiLabel: UILabel!
+    @IBOutlet weak var colorView: UIView!
     
     var centralManager:CBCentralManager!
     var peripheral:CBPeripheral?
     var dataBuffer:NSMutableData!
-    
     
     override func viewDidLoad() {
         super.viewDidLoad()
         textView.text = ""
         self.textView.layer.borderColor = UIColor.lightGrayColor().CGColor
         self.textView.layer.borderWidth = 1.0
+        
         rssiLabel.text = ""
+        
+        colorView.layer.borderWidth = 1.0
+        colorView.layer.borderColor = UIColor.lightGrayColor().CGColor
+        
         centralManager = CBCentralManager(delegate: self, queue: nil)
         dataBuffer = NSMutableData()
     }
@@ -43,8 +48,10 @@ class CentralManagerViewController: UIViewController, CBCentralManagerDelegate, 
      */
     func centralManagerDidUpdateState(central: CBCentralManager) {
         
+        print("Central Manager State Updated: \(central.state)")
+        
         // we show more detailed handling of this in Part 2, so we just handle it the easy way here
-        if centralManager.state != .PoweredOn {
+        if central.state != .PoweredOn {
             return
         }
         
