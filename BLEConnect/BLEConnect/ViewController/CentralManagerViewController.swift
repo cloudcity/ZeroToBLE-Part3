@@ -13,7 +13,7 @@ class CentralManagerViewController: UIViewController, CBCentralManagerDelegate, 
 
     @IBOutlet weak var textView: UITextView!
     @IBOutlet weak var rssiLabel: UILabel!
-    @IBOutlet weak var colorView: UIView!
+    @IBOutlet weak var connectionIndicatorView: UIView!
     
     var centralManager:CBCentralManager!
     var peripheral:CBPeripheral?
@@ -27,11 +27,10 @@ class CentralManagerViewController: UIViewController, CBCentralManagerDelegate, 
         
         rssiLabel.text = ""
         
-        colorView.layer.borderWidth = 1.0
-        colorView.layer.borderColor = UIColor.lightGrayColor().CGColor
-        
         centralManager = CBCentralManager(delegate: self, queue: nil)
-        //dataBuffer = NSMutableData()
+        
+        connectionIndicatorView.layer.backgroundColor = UIColor.redColor().CGColor
+        connectionIndicatorView.layer.cornerRadius = connectionIndicatorView.frame.height / 2
     }
    
     override func viewWillAppear(animated: Bool) {
@@ -164,7 +163,9 @@ class CentralManagerViewController: UIViewController, CBCentralManagerDelegate, 
      */
     func centralManager(central: CBCentralManager, didConnectPeripheral peripheral: CBPeripheral) {
         print("Peripheral Connected!!!")
-
+        
+        connectionIndicatorView.layer.backgroundColor = UIColor.greenColor().CGColor
+        
         // Stop scanning
         centralManager.stopScan()
         print("Scanning Stopped!")
@@ -191,6 +192,7 @@ class CentralManagerViewController: UIViewController, CBCentralManagerDelegate, 
      */
     func centralManager(central: CBCentralManager, didFailToConnectPeripheral peripheral: CBPeripheral, error: NSError?) {
         print("Failed to connect to \(peripheral) (\(error?.localizedDescription))")
+        connectionIndicatorView.layer.backgroundColor = UIColor.redColor().CGColor
         self.cleanupCentral()
     }
     
@@ -207,6 +209,7 @@ class CentralManagerViewController: UIViewController, CBCentralManagerDelegate, 
     func centralManager(central: CBCentralManager, didDisconnectPeripheral peripheral: CBPeripheral, error: NSError?) {
         // set our reference to nil and start scanning again...
         print("Disconnected from Peripheral")
+        connectionIndicatorView.layer.backgroundColor = UIColor.redColor().CGColor
         self.peripheral = nil
         startScanning()
     }
@@ -306,7 +309,7 @@ class CentralManagerViewController: UIViewController, CBCentralManagerDelegate, 
         
         // make sure we have a characteristic value
         guard let nextChunk = String(data: value, encoding: NSUTF8StringEncoding) else {
-            print("Could not convert the next chunk of data into a string. Turned up nil.")
+            print("Next chunk of data is nil.")
             return
         }
         
