@@ -68,15 +68,9 @@ class PeripheralManagerViewController: UIViewController, CBPeripheralManagerDele
     
     func captureCurrentText() {
         print("captureCurrentText")
-
-        // if we are not advertising, just bail.
-        if !advertisingSwitch.on {
-            resetData()
-            return
-        }
         
         // if we are not sending right now, capture the current state
-        if !sendingTextData {
+        if (!sendingTextData) && (currentTextSnapshot != textView.text)  {
             print("Not currently sending data. Capturing snapshot and will send it over!")
             currentTextSnapshot = textView.text
             dataToSend = currentTextSnapshot.dataUsingEncoding(NSUTF8StringEncoding)
@@ -87,7 +81,8 @@ class PeripheralManagerViewController: UIViewController, CBPeripheralManagerDele
         }
         
         // set a timer to check again in 1 second...
-        _ = NSTimer(timeInterval: 1.0, target: self, selector: #selector(captureCurrentText), userInfo: nil, repeats: false)
+        print("Scheduling new timer: \(NSDate())")
+        _ = NSTimer.scheduledTimerWithTimeInterval(1.0, target: self, selector: #selector(captureCurrentText), userInfo: nil, repeats: false)
     }
     
     func sendTextData() {
@@ -250,6 +245,7 @@ class PeripheralManagerViewController: UIViewController, CBPeripheralManagerDele
 //        // start sending data
 //        sendTextData()
         
+        captureCurrentText()
     }
     
     /*
