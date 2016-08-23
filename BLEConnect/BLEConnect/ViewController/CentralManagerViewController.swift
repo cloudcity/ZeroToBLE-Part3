@@ -31,11 +31,69 @@ class CentralManagerViewController: UIViewController, CBCentralManagerDelegate, 
         colorView.layer.borderColor = UIColor.lightGrayColor().CGColor
         
         centralManager = CBCentralManager(delegate: self, queue: nil)
+        //dataBuffer = NSMutableData()
+    }
+   
+    override func viewWillAppear(animated: Bool) {
+        self.textView.text = ""
         dataBuffer = NSMutableData()
     }
     
     override func viewWillDisappear(animated: Bool) {
-        centralManager?.stopScan()
+        stopScanning()
+        cleanupCentral()
+    }
+    
+    
+    // MARK: Central management methods
+    
+    func stopScanning() {
+        centralManager.stopScan()
+    }
+    
+    func startScanning() {
+        centralManager.scanForPeripheralsWithServices([CBUUID.init(string: Device.TransferService)], options: [CBCentralManagerScanOptionAllowDuplicatesKey:true])
+        print("Scanning Started!")
+    }
+    
+    /*
+     Call this when things either go wrong, or you're done with the connection.
+     This cancels any subscriptions if there are any, or straight disconnects if not.
+     (didUpdateNotificationStateForCharacteristic will cancel the connection if a subscription is involved)
+     */
+    func cleanupCentral() {
+        
+        // verify we have a peripheral
+        guard let peripheral = self.peripheral else {
+            print("No peripheral available to cleanup.")
+            return
+        }
+        
+        // Don't do anything if we're not connected
+        if peripheral.state != .Connected {
+            print("Peripheral is not connected.")
+            return
+        }
+        
+        if let services = peripheral.services {
+            // iterate through services
+            for service in services {
+                // iterate through characteristics
+                if let characteristics = service.characteristics {
+                    for characteristic in characteristics {
+                        // find the Transfer Characteristic we defined in our Device struct
+                        if characteristic.UUID == CBUUID.init(string: Device.TransferCharacteristic) {
+                            peripheral.setNotifyValue(false, forCharacteristic: characteristic)
+                            return
+                        }
+                    }
+                }
+            }
+        }
+        
+        // We have a connection to the device but we are not subscribed to the Transfer Characteristic for some reason.
+        // Therefore, we will just disconnect from the peripheral
+        centralManager.cancelPeripheralConnection(peripheral)
     }
     
     
@@ -43,19 +101,18 @@ class CentralManagerViewController: UIViewController, CBCentralManagerDelegate, 
     
     /* 
      Invoked when the central manager’s state is updated.
-     
      This is where we kick off the scanning if Bluetooth is turned on and is active.
      */
     func centralManagerDidUpdateState(central: CBCentralManager) {
-        
         print("Central Manager State Updated: \(central.state)")
         
-        // we show more detailed handling of this in Part 2, so we just handle it the easy way here
+        // We showed more detailed handling of this in Zero-to-BLE Part 2, so please refer to that if you would like more information.
+        // We will just handle it the easy way here: if Bluetooth is on, proceed...
         if central.state != .PoweredOn {
             return
         }
         
-        scan()
+        startScanning()
     }
     
     /*
@@ -134,7 +191,7 @@ class CentralManagerViewController: UIViewController, CBCentralManagerDelegate, 
      */
     func centralManager(central: CBCentralManager, didFailToConnectPeripheral peripheral: CBPeripheral, error: NSError?) {
         print("Failed to connect to \(peripheral) (\(error?.localizedDescription))")
-        self.cleanup()
+        self.cleanupCentral()
     }
     
     
@@ -151,7 +208,7 @@ class CentralManagerViewController: UIViewController, CBCentralManagerDelegate, 
         // set our reference to nil and start scanning again...
         print("Disconnected from Peripheral")
         self.peripheral = nil
-        scan()
+        startScanning()
     }
     
     
@@ -174,7 +231,7 @@ class CentralManagerViewController: UIViewController, CBCentralManagerDelegate, 
 
         if error != nil {
             print("Error discovering services: \(error?.localizedDescription)")
-            cleanup()
+            cleanupCentral()
             return
         }
         
@@ -231,6 +288,8 @@ class CentralManagerViewController: UIViewController, CBCentralManagerDelegate, 
      If unsuccessful, the error parameter returns the cause of the failure.
      */
     func peripheral(peripheral: CBPeripheral, didUpdateValueForCharacteristic characteristic: CBCharacteristic, error: NSError?) {
+        print("didUpdateValueForCharacteristic: \(NSDate())")
+        1
         // if there was an error then print it and bail out
         if error != nil {
             print("Error updating value for characteristic: \(characteristic) - \(error?.localizedDescription)")
@@ -254,19 +313,16 @@ class CentralManagerViewController: UIViewController, CBCentralManagerDelegate, 
         print("Next chunk: \(nextChunk)")
         
         // If we get the EOM tag, we fill the text view
-        if (nextChunk == Device.EOM) || (nextChunk == "EOM") {
+        if (nextChunk == Device.EOM) {
             if let message = String(data: dataBuffer, encoding: NSUTF8StringEncoding) {
-                self.textView.text = message
+                textView.text = message
                 print("Final message: \(message)")
+                
+                // truncate our buffer now that we received the EOM signal!
+                dataBuffer.length = 0
             }
-            
-            // cancel our subscription to the characteristic
-            peripheral.setNotifyValue(false, forCharacteristic: characteristic)
-            
-            // disconnect from the peripheral
-            self.centralManager.cancelPeripheralConnection(peripheral)
         } else {
-            self.dataBuffer.appendData(value)
+            dataBuffer.appendData(value)
             print("Next chunk received: \(nextChunk)")
             if let buffer = self.dataBuffer {
                 print("Transfer buffer: \(String(data: buffer, encoding: NSUTF8StringEncoding))")
@@ -299,54 +355,7 @@ class CentralManagerViewController: UIViewController, CBCentralManagerDelegate, 
         }
 
     }
-    
-    
-    // MARK: Utility methods
-    
-    func scan() {
-        centralManager.scanForPeripheralsWithServices([CBUUID.init(string: Device.TransferService)], options: [CBCentralManagerScanOptionAllowDuplicatesKey:true])
-        print("Scanning Started!")
-    }
-    
-    /*
-     Call this when things either go wrong, or you're done with the connection.
-     This cancels any subscriptions if there are any, or straight disconnects if not.
-     (didUpdateNotificationStateForCharacteristic will cancel the connection if a subscription is involved)
-     */
-    func cleanup() {
 
-        // verify we have a peripheral
-        guard let peripheral = self.peripheral else {
-            print("No peripheral available to cleanup.")
-            return
-        }
-        
-        // Don't do anything if we're not connected
-        if peripheral.state != .Connected {
-            print("Peripheral is not connected.")
-            return
-        }
-        
-        if let services = peripheral.services {
-            // iterate through services
-            for service in services {
-                // iterate through characteristics
-                if let characteristics = service.characteristics {
-                    for characteristic in characteristics {
-                        // find the Transfer Characteristic we defined in our Device struct
-                        if characteristic.UUID == CBUUID.init(string: Device.TransferCharacteristic) {
-                            peripheral.setNotifyValue(false, forCharacteristic: characteristic)
-                            return
-                        }
-                    }
-                }
-            }
-        }
-        
-        // We have a connection to the device but we are not subscribed to the Transfer Characteristic for some reason.
-        // Therefore, we will just disconnect from the peripheral
-        centralManager.cancelPeripheralConnection(peripheral)
-    }
 
     
     /*
