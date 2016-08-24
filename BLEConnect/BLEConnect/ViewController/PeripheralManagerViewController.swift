@@ -14,7 +14,7 @@ class PeripheralManagerViewController: UIViewController, CBPeripheralManagerDele
     @IBOutlet weak var textView: UITextView!
     @IBOutlet weak var advertisingSwitch: UISwitch!
     
-    var peripheralManager:CBPeripheralManager!
+    var peripheralManager:CBPeripheralManager?
     var transferCharacteristic:CBMutableCharacteristic?
     var dataToSend:NSData?
     var sendDataIndex = 0
@@ -39,6 +39,7 @@ class PeripheralManagerViewController: UIViewController, CBPeripheralManagerDele
     override func viewWillDisappear(animated: Bool) {
         // turn off advertising when the view goes away
         self.peripheralManager?.stopAdvertising()
+        self.peripheralManager = nil
         super.viewWillDisappear(animated)
     }
     
@@ -49,10 +50,10 @@ class PeripheralManagerViewController: UIViewController, CBPeripheralManagerDele
         print("switch: \(sender.on ? "ON" : "OFF")")
         if sender.on {
             print("Peripheral Manager: Starting Advertising Transfer Service (\(Device.TransferService))")
-            peripheralManager.startAdvertising([CBAdvertisementDataServiceUUIDsKey : [CBUUID.init(string: Device.TransferService)]])
+            peripheralManager?.startAdvertising([CBAdvertisementDataServiceUUIDsKey : [CBUUID.init(string: Device.TransferService)]])
         } else {
             print("Peripheral Manager: Stopping Advertising!!!")
-            peripheralManager.stopAdvertising()
+            peripheralManager?.stopAdvertising()
         }
     }
 
@@ -230,21 +231,6 @@ class PeripheralManagerViewController: UIViewController, CBPeripheralManagerDele
      */
     func peripheralManager(peripheral: CBPeripheralManager, central: CBCentral, didSubscribeToCharacteristic characteristic: CBCharacteristic) {
         print("Central has subscribed to characteristic: \(central)")
-        
-//        guard let text = self.textView.text else {
-//            print("No text available to send.")
-//            return
-//        }
-//        
-//        // get the data
-//        dataToSend = text.dataUsingEncoding(NSUTF8StringEncoding)
-//        
-//        // reset the index
-//        sendDataIndex = 0
-//        
-//        // start sending data
-//        sendTextData()
-        
         captureCurrentText()
     }
     
