@@ -32,7 +32,7 @@ class PeripheralManagerViewController: UIViewController, CBPeripheralManagerDele
         self.textView.layer.borderWidth = 1.0
         self.textView.delegate = self
         
-        // create and start the peripheral manager
+        // Create and start the peripheral manager
         self.peripheralManager = CBPeripheralManager(delegate: self, queue: nil)
     }
     

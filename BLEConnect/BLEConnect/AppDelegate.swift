@@ -13,9 +13,31 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 
     var window: UIWindow?
 
-
     func application(application: UIApplication, didFinishLaunchingWithOptions launchOptions: [NSObject: AnyObject]?) -> Bool {
-        // Override point for customization after application launch.
+
+        // NOTE: This is here for instructional purposes in case someone needs to re-instantiate 
+        // CBCentralManagers or CBPeripheralManagers after being restored.
+//        if let launchOptions = launchOptions {
+//            if let centralManagerUUIDs = launchOptions[UIApplicationLaunchOptionsBluetoothCentralsKey] as? Array<String> {
+//                for id in centralManagerUUIDs {
+//                    if id == Device.centralRestoreIdentifier {
+//                        // Restore the CBCentralManager here
+//                    }
+//                }
+//            }
+//            
+//            // see if the managers we are interested in are present
+//            if let peripheralManagerUUIDs = launchOptions[UIApplicationLaunchOptionsBluetoothPeripheralsKey] as? Array<String> {
+//                for id in peripheralManagerUUIDs {
+//                    if id == Device.peripheralRestoreIdentifier {
+//                        // Restore the CBPeripheralManager here
+//                    }
+//                }
+//            }
+//
+//            // Note: if you opt to not restore a manager, the system will let it live for a brief time and then will get rid of it.
+//        }
+        
         return true
     }
 

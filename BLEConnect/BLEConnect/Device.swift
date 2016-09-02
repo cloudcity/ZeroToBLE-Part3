@@ -21,4 +21,8 @@ struct Device {
     
     // We have a 20-byte limit for data transfer
     static let notifyMTU = 20
+    
+    static let centralRestoreIdentifier = "io.cloudcity.BLEConnect.CentralManager"
+    static let peripheralRestoreIdentifier = "io.cloudcity.BLEConnect.PeripheralManager"
+    
 }

@@ -18,6 +18,7 @@ class CentralManagerViewController: UIViewController, CBCentralManagerDelegate, 
     var centralManager:CBCentralManager!
     var peripheral:CBPeripheral?
     var dataBuffer:NSMutableData!
+    var scanAfterDisconnecting:Bool = true
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -27,7 +28,12 @@ class CentralManagerViewController: UIViewController, CBCentralManagerDelegate, 
         
         rssiLabel.text = ""
         
+        // Create and start the central manager
+        // Without State Preservation and Restoration:
         centralManager = CBCentralManager(delegate: self, queue: nil)
+        
+        // With State Preservation and Restoration
+        //centralManager = CBCentralManager(delegate: self, queue: nil, options: [CBCentralManagerOptionRestoreIdentifierKey : Device.centralRestoreIdentifier])
         
         connectionIndicatorView.layer.backgroundColor = UIColor.redColor().CGColor
         connectionIndicatorView.layer.cornerRadius = connectionIndicatorView.frame.height / 2
@@ -40,7 +46,21 @@ class CentralManagerViewController: UIViewController, CBCentralManagerDelegate, 
     
     override func viewWillDisappear(animated: Bool) {
         stopScanning()
-        cleanupCentral()
+        scanAfterDisconnecting = false
+        disconnect()
+    }
+    
+    
+    // MARK: Handling User Interactions
+    
+    @IBAction func handleDisconnectButtonTapped(sender: AnyObject) {
+        // if we are currently connected, then disconnect, otherwise start scanning again.
+        if let _ = self.peripheral {
+            scanAfterDisconnecting = false
+            disconnect()
+        } else {
+            startScanning()
+        }
     }
     
     
@@ -51,6 +71,10 @@ class CentralManagerViewController: UIViewController, CBCentralManagerDelegate, 
     }
     
     func startScanning() {
+        if centralManager.isScanning {
+            print("Central Manager is already scanning!!")
+            return;
+        }
         centralManager.scanForPeripheralsWithServices([CBUUID.init(string: Device.TransferService)], options: [CBCentralManagerScanOptionAllowDuplicatesKey:true])
         print("Scanning Started!")
     }
@@ -60,31 +84,36 @@ class CentralManagerViewController: UIViewController, CBCentralManagerDelegate, 
      This cancels any subscriptions if there are any, or straight disconnects if not.
      (didUpdateNotificationStateForCharacteristic will cancel the connection if a subscription is involved)
      */
-    func cleanupCentral() {
-        
+    func disconnect() {
         // verify we have a peripheral
         guard let peripheral = self.peripheral else {
-            print("No peripheral available to cleanup.")
+            print("Peripheral object has not been created yet.")
             return
         }
         
-        // Don't do anything if we're not connected
+        // check to see if the peripheral is connected
         if peripheral.state != .Connected {
-            print("Peripheral is not connected.")
+            print("Peripheral exists but is not connected.")
+            self.peripheral = nil
             return
         }
         
-        if let services = peripheral.services {
-            // iterate through services
-            for service in services {
-                // iterate through characteristics
-                if let characteristics = service.characteristics {
-                    for characteristic in characteristics {
-                        // find the Transfer Characteristic we defined in our Device struct
-                        if characteristic.UUID == CBUUID.init(string: Device.TransferCharacteristic) {
-                            peripheral.setNotifyValue(false, forCharacteristic: characteristic)
-                            return
-                        }
+        guard let services = peripheral.services else {
+            // disconnect directly
+            centralManager.cancelPeripheralConnection(peripheral)
+            return
+        }
+        
+        for service in services {
+            // iterate through characteristics
+            if let characteristics = service.characteristics {
+                for characteristic in characteristics {
+                    // find the Transfer Characteristic we defined in our Device struct
+                    if characteristic.UUID == CBUUID.init(string: Device.TransferCharacteristic) {
+                        // We can return after calling CBPeripheral.setNotifyValue because CBPeripheralDelegate's
+                        // didUpdateNotificationStateForCharacteristic method will be called automatically
+                        peripheral.setNotifyValue(false, forCharacteristic: characteristic)
+                        return
                     }
                 }
             }
@@ -98,6 +127,46 @@ class CentralManagerViewController: UIViewController, CBCentralManagerDelegate, 
     
     // MARK: CBCentralManagerDelegate Methods
     
+    // State Preservation and Restoration
+    // This is the FIRST delegate method that will be called when being relaunched -- not centralManagerDidUpdateState
+    func centralManager(central: CBCentralManager, willRestoreState dict: [String : AnyObject]) {
+        
+        //---------------------------------------------------------------------------
+        // We don't need these, but it's good to know that they exist.
+        //---------------------------------------------------------------------------
+        // Retrive array of service UUIDs (represented by CBUUID objects) that 
+        // contains all the services the central manager was scanning for at the time
+        // the app was terminated by the system.
+        //
+        //let scanServices = dict[CBCentralManagerRestoredStateScanServicesKey]
+        
+        // Retrieve dictionary containing all of the peripheral scan options that 
+        // were being used by the central manager at the time the app was terminated 
+        // by the system.
+        //
+        //let scanOptions = dict[CBCentralManagerRestoredStateScanOptionsKey]
+        //---------------------------------------------------------------------------
+        
+        /*
+         Retrieve array of CBPeripheral objects containing all of the peripherals that were connected to the central manager
+         (or that had a connection pending) at the time the app was terminated by the system.
+         
+         When possible, all the information about a peripheral is restored, including any discovered services, characteristics,
+         characteristic descriptors, and characteristic notification states.
+         */
+        
+        if let peripheralsObject = dict[CBCentralManagerRestoredStatePeripheralsKey] {
+            let peripherals = peripheralsObject as! Array<CBPeripheral>
+            if peripherals.count > 0 {
+                // Just grab the first one in this case. If we had maintained an array of 
+                // multiple peripherals then we would just add them to our array and set the delegate...
+                peripheral = peripherals[0]
+                peripheral?.delegate = self
+            }
+        }
+    }
+    
+    
     /* 
      Invoked when the central manager’s state is updated.
      This is where we kick off the scanning if Bluetooth is turned on and is active.
@@ -108,10 +177,58 @@ class CentralManagerViewController: UIViewController, CBCentralManagerDelegate, 
         // We showed more detailed handling of this in Zero-to-BLE Part 2, so please refer to that if you would like more information.
         // We will just handle it the easy way here: if Bluetooth is on, proceed...
         if central.state != .PoweredOn {
+            self.peripheral = nil
             return
         }
         
         startScanning()
+        
+        //--------------------------------------------------------------
+        // If the app has been restored with the peripheral in centralManager(_:, willRestoreState:),
+        // we start subscribing to updates again to the Transfer Characteristic.
+        //--------------------------------------------------------------
+        // check for a peripheral object
+        guard let peripheral = self.peripheral else {
+            return
+        }
+
+        // see if that peripheral is connected
+        guard peripheral.state == .Connected else {
+            return
+        }
+
+        // make sure the peripheral has services
+        guard let peripheralServices = peripheral.services else {
+            return
+        }
+        
+        // we have services, but we need to check for the Transfer Service
+        // (honestly, this may be overkill for our project but it demonstrates how to make this process more bulletproof...)
+        // Also: Pardon the pyramid.
+        let serviceUUID = CBUUID(string: Device.TransferService)
+        if let serviceIndex = peripheralServices.indexOf({$0.UUID == serviceUUID}) {
+            // we have the service, but now we check to see if we have a characteristic that we've subscribed to...
+            let transferService = peripheralServices[serviceIndex]
+            let characteristicUUID = CBUUID(string: Device.TransferCharacteristic)
+            if let characteristics = transferService.characteristics {
+                if let characteristicIndex = characteristics.indexOf({$0.UUID == characteristicUUID}) {
+                    // Because this is a characteristic that we subscribe to in the standard workflow,
+                    // we need to check if we are currently subscribed, and if not, then call the 
+                    // setNotifyValue like we did before.
+                    let characteristic = characteristics[characteristicIndex]
+                    if !characteristic.isNotifying {
+                       peripheral.setNotifyValue(true, forCharacteristic: characteristic)
+                    }
+                } else {
+                    // if we have not discovered the characteristic yet, then call discoverCharacteristics, and the delegate method will get called as in the standard workflow...
+                    peripheral.discoverCharacteristics([characteristicUUID], forService: transferService)
+                }
+            }
+        } else {
+            // we have a CBPeripheral object, but we have not discovered the services yet,
+            // so we call discoverServices and the delegate method will handle the rest...
+            peripheral.discoverServices([serviceUUID])
+        }
     }
     
     /*
@@ -193,7 +310,7 @@ class CentralManagerViewController: UIViewController, CBCentralManagerDelegate, 
     func centralManager(central: CBCentralManager, didFailToConnectPeripheral peripheral: CBPeripheral, error: NSError?) {
         print("Failed to connect to \(peripheral) (\(error?.localizedDescription))")
         connectionIndicatorView.layer.backgroundColor = UIColor.redColor().CGColor
-        self.cleanupCentral()
+        self.disconnect()
     }
     
     
@@ -211,7 +328,9 @@ class CentralManagerViewController: UIViewController, CBCentralManagerDelegate, 
         print("Disconnected from Peripheral")
         connectionIndicatorView.layer.backgroundColor = UIColor.redColor().CGColor
         self.peripheral = nil
-        startScanning()
+        if scanAfterDisconnecting {
+            startScanning()
+        }
     }
     
     
@@ -234,7 +353,7 @@ class CentralManagerViewController: UIViewController, CBCentralManagerDelegate, 
 
         if error != nil {
             print("Error discovering services: \(error?.localizedDescription)")
-            cleanupCentral()
+            disconnect()
             return
         }
         
