@@ -32,11 +32,11 @@ extension UIColor {
         if correctedAlpha > 1.0 { correctedAlpha = 1.0 }
         
         // begin parsing the hex string
-        var trimmedString:String = hexString.stringByTrimmingCharactersInSet(NSCharacterSet.whitespaceAndNewlineCharacterSet() as NSCharacterSet).uppercaseString
+        var trimmedString:String = hexString.trimmingCharacters(in: .whitespacesAndNewlines)
         
         // if string was passed with pound sign, filter it out...
         if (trimmedString.hasPrefix("#")) {
-            trimmedString = trimmedString.substringFromIndex(trimmedString.startIndex.advancedBy(1))
+            trimmedString = trimmedString.substring(from: trimmedString.characters.index(trimmedString.startIndex, offsetBy: 1))
         }
         
         // process the remaining string
@@ -46,7 +46,7 @@ extension UIColor {
             self.init(red:127, green: 127, blue: 127)
         } else {
             var rgbValue:UInt32 = 0
-            if NSScanner(string: trimmedString).scanHexInt(&rgbValue) {
+            if Scanner(string: trimmedString).scanHexInt32(&rgbValue) {
                 self.init(
                     red: CGFloat((rgbValue & 0xFF0000) >> 16) / 255.0,
                     green: CGFloat((rgbValue & 0x00FF00) >> 8) / 255.0,

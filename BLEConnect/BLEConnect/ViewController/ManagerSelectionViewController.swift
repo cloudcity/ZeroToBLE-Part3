@@ -21,12 +21,12 @@ class ManagerSelectionViewController: UIViewController {
         // Dispose of any resources that can be recreated.
     }
     
-    @IBAction func handleCentralButtonTapped(sender: AnyObject) {
-        self.performSegueWithIdentifier("showCentralManagerViewController", sender: self)
+    @IBAction func handleCentralButtonTapped(_ sender: AnyObject) {
+        self.performSegue(withIdentifier: "showCentralManagerViewController", sender: self)
     }
     
-    @IBAction func handlePeripheralButtonTapped(sender: AnyObject) {
-        self.performSegueWithIdentifier("showPeripheralManagerViewController", sender: self)
+    @IBAction func handlePeripheralButtonTapped(_ sender: AnyObject) {
+        self.performSegue(withIdentifier: "showPeripheralManagerViewController", sender: self)
     }
 
     /*

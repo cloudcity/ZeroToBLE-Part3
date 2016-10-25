@@ -16,7 +16,7 @@ class PeripheralManagerViewController: UIViewController, CBPeripheralManagerDele
     
     var peripheralManager:CBPeripheralManager?
     var transferCharacteristic:CBMutableCharacteristic?
-    var dataToSend:NSData?
+    var dataToSend:Data?
     var sendDataIndex = 0
     let notifyMTU = 20
     var sendingEOM = false
@@ -26,9 +26,9 @@ class PeripheralManagerViewController: UIViewController, CBPeripheralManagerDele
     
     override func viewDidLoad() {
         super.viewDidLoad()
-        self.advertisingSwitch.on = false
+        self.advertisingSwitch.isOn = false
         
-        self.textView.layer.borderColor = UIColor.lightGrayColor().CGColor
+        self.textView.layer.borderColor = UIColor.lightGray.cgColor
         self.textView.layer.borderWidth = 1.0
         self.textView.delegate = self
         
@@ -36,7 +36,7 @@ class PeripheralManagerViewController: UIViewController, CBPeripheralManagerDele
         self.peripheralManager = CBPeripheralManager(delegate: self, queue: nil)
     }
     
-    override func viewWillDisappear(animated: Bool) {
+    override func viewWillDisappear(_ animated: Bool) {
         // turn off advertising when the view goes away
         self.peripheralManager?.stopAdvertising()
         self.peripheralManager = nil
@@ -46,9 +46,9 @@ class PeripheralManagerViewController: UIViewController, CBPeripheralManagerDele
     
     // MARK: - Handling User Interactions
     
-    @IBAction func handleAdvertisingSwitchValueChanged(sender: UISwitch) {
-        print("switch: \(sender.on ? "ON" : "OFF")")
-        if sender.on {
+    @IBAction func handleAdvertisingSwitchValueChanged(_ sender: UISwitch) {
+        print("switch: \(sender.isOn ? "ON" : "OFF")")
+        if sender.isOn {
             print("Peripheral Manager: Starting Advertising Transfer Service (\(Device.TransferService))")
             peripheralManager?.startAdvertising([CBAdvertisementDataServiceUUIDsKey : [CBUUID.init(string: Device.TransferService)]])
         } else {
@@ -74,7 +74,7 @@ class PeripheralManagerViewController: UIViewController, CBPeripheralManagerDele
         if (!sendingTextData) && (currentTextSnapshot != textView.text)  {
             print("Not currently sending data. Capturing snapshot and will send it over!")
             currentTextSnapshot = textView.text
-            dataToSend = currentTextSnapshot.dataUsingEncoding(NSUTF8StringEncoding)
+            dataToSend = currentTextSnapshot.data(using: String.Encoding.utf8)
             sendDataIndex = 0
             sendTextData()
         } else {
@@ -82,8 +82,8 @@ class PeripheralManagerViewController: UIViewController, CBPeripheralManagerDele
         }
         
         // set a timer to check again in 1 second...
-        print("Scheduling new timer: \(NSDate())")
-        _ = NSTimer.scheduledTimerWithTimeInterval(1.0, target: self, selector: #selector(captureCurrentText), userInfo: nil, repeats: false)
+        print("Scheduling new timer: \(Date())")
+        _ = Timer.scheduledTimer(timeInterval: 1.0, target: self, selector: #selector(captureCurrentText), userInfo: nil, repeats: false)
     }
     
     func sendTextData() {
@@ -103,7 +103,7 @@ class PeripheralManagerViewController: UIViewController, CBPeripheralManagerDele
         if sendingEOM {
             print("Attempting to send EOM...")
             
-            let didSend = peripheralManager.updateValue(Device.EOM.dataUsingEncoding(NSUTF8StringEncoding)!, forCharacteristic: transferCharacteristic, onSubscribedCentrals: nil)
+            let didSend = peripheralManager.updateValue(Device.EOM.data(using: String.Encoding.utf8)!, for: transferCharacteristic, onSubscribedCentrals: nil)
             if didSend {
                 sendingEOM = false
                 print("EOM Sent!!!")
@@ -121,7 +121,7 @@ class PeripheralManagerViewController: UIViewController, CBPeripheralManagerDele
             return
         }
         
-        if sendDataIndex >= dataToSend.length {
+        if sendDataIndex >= dataToSend.count {
             return;
         }
         
@@ -136,7 +136,7 @@ class PeripheralManagerViewController: UIViewController, CBPeripheralManagerDele
             print("Preparing next message chunk...")
             
             // Determine chunk size
-            var amountToSend = dataToSend.length - sendDataIndex
+            var amountToSend = dataToSend.count - sendDataIndex
             print("Next amout to send: \(amountToSend)")
             
             // we have a 20-byte limit, so if the amount to send is greater than 20, then clamp it down to 20.
@@ -145,22 +145,28 @@ class PeripheralManagerViewController: UIViewController, CBPeripheralManagerDele
             }
             
             // extract the data we want to send
-            let chunk = NSData(bytes: dataToSend.bytes + sendDataIndex, length: amountToSend)
+            let upToIndex = sendDataIndex + amountToSend
+            print("Next Chunk should be \(amountToSend) bytes long and goes from \(sendDataIndex) to \(upToIndex)")
+
+            // verify chunk length
+            let chunk = dataToSend.subdata(in: sendDataIndex ..< upToIndex)
+            print("Next Chunk is \(chunk.count) bytes long.")
             
-            let testChunk = String(data: chunk, encoding: NSUTF8StringEncoding)
-            print("Next Chunk from data: \(testChunk)")
+            // output the chunk to see if we got the right block of text...
+            let chunkText = String(data: chunk, encoding: String.Encoding.utf8)
+            print("Next Chunk from data: \(chunkText)")
             
-            // Send it
+            // Send the chunk of text...
             // updateValue sends an updated characteristic value to one or more subscribed centrals via a notification.
             // passing nil for the centrals notifies all subscribed centrals, but you can target specific ones if you need to.
-            didSend = peripheralManager.updateValue(chunk, forCharacteristic: transferCharacteristic, onSubscribedCentrals: nil)
+            didSend = peripheralManager.updateValue(chunk, for: transferCharacteristic, onSubscribedCentrals: nil)
             
             // If it didn't work, drop out and wait for the callback
             if !didSend {
                 return
             }
             
-            if let stringFromData = String.init(data: chunk, encoding: NSUTF8StringEncoding) {
+            if let stringFromData = String.init(data: chunk, encoding: String.Encoding.utf8) {
                 print("Sent: \(stringFromData)")
             }
             
@@ -168,14 +174,14 @@ class PeripheralManagerViewController: UIViewController, CBPeripheralManagerDele
             self.sendDataIndex += amountToSend;
             
             // Determine if that was was the last chunk of data to send, and if so, send the EOM tag
-            if sendDataIndex >= dataToSend.length {
+            if sendDataIndex >= dataToSend.count {
                 
                 // Set this so if the send fails, we'll send it next time
                 sendingEOM = true
                 
                 // Send the EOM tag
-                let eomData = Device.EOM.dataUsingEncoding(NSUTF8StringEncoding)!
-                let eomSent = peripheralManager.updateValue(eomData, forCharacteristic: transferCharacteristic, onSubscribedCentrals: nil)
+                let eomData = Device.EOM.data(using: String.Encoding.utf8)!
+                let eomSent = peripheralManager.updateValue(eomData, for: transferCharacteristic, onSubscribedCentrals: nil)
                 if (eomSent) {
                     // If the send was successful, then we're done, otherwise we'll send it next time
                     sendingEOM = false
@@ -198,19 +204,19 @@ class PeripheralManagerViewController: UIViewController, CBPeripheralManagerDele
      Invoked when the peripheral manager’s state is updated. (required)
      peripheral	- The peripheral manager whose state has changed.
      */
-    func peripheralManagerDidUpdateState(peripheral: CBPeripheralManager) {
+    func peripheralManagerDidUpdateState(_ peripheral: CBPeripheralManager) {
         
         print("Peripheral Manager State Updated: \(peripheral.state)")
 
         // bail out if peripheral is not powered on
-        if peripheral.state != .PoweredOn {
+        if peripheral.state != .poweredOn {
             return
         }
         
         print("Bluetooth is Powered Up!!!")
         
         // Build Peripheral Service: first, create service characteristic
-        self.transferCharacteristic = CBMutableCharacteristic(type: CBUUID.init(string: Device.TransferCharacteristic), properties: .Notify, value: nil, permissions: .Readable)
+        self.transferCharacteristic = CBMutableCharacteristic(type: CBUUID.init(string: Device.TransferCharacteristic), properties: .notify, value: nil, permissions: .readable)
         
         // create the service
         let service = CBMutableService(type: CBUUID.init(string: Device.TransferService), primary: true)
@@ -219,7 +225,7 @@ class PeripheralManagerViewController: UIViewController, CBPeripheralManagerDele
         service.characteristics = [self.transferCharacteristic!]
         
         // add service to the peripheral manager
-        self.peripheralManager?.addService(service)
+        self.peripheralManager?.add(service)
     }
     
     /*
@@ -229,7 +235,7 @@ class PeripheralManagerViewController: UIViewController, CBPeripheralManagerDele
      central	- The remote central device that subscribed to the characteristic’s value.
      characteristic	- The characteristic whose value has been subscribed to.
      */
-    func peripheralManager(peripheral: CBPeripheralManager, central: CBCentral, didSubscribeToCharacteristic characteristic: CBCharacteristic) {
+    func peripheralManager(_ peripheral: CBPeripheralManager, central: CBCentral, didSubscribeTo characteristic: CBCharacteristic) {
         print("Central has subscribed to characteristic: \(central)")
         captureCurrentText()
     }
@@ -244,7 +250,7 @@ class PeripheralManagerViewController: UIViewController, CBPeripheralManagerDele
      
      You can then implement this delegate method to resend the value.
      */
-    func peripheralManagerIsReadyToUpdateSubscribers(peripheral: CBPeripheralManager) {
+    func peripheralManagerIsReady(toUpdateSubscribers peripheral: CBPeripheralManager) {
         // This callback comes in when the PeripheralManager is ready to send the next chunk of data.
         // This is to ensure that packets will arrive in the order they are sent
         sendTextData()

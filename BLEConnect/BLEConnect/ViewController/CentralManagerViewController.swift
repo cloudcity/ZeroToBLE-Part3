@@ -23,7 +23,7 @@ class CentralManagerViewController: UIViewController, CBCentralManagerDelegate, 
     override func viewDidLoad() {
         super.viewDidLoad()
         textView.text = ""
-        self.textView.layer.borderColor = UIColor.lightGrayColor().CGColor
+        self.textView.layer.borderColor = UIColor.lightGray.cgColor
         self.textView.layer.borderWidth = 1.0
         
         rssiLabel.text = ""
@@ -35,16 +35,16 @@ class CentralManagerViewController: UIViewController, CBCentralManagerDelegate, 
         // With State Preservation and Restoration
         //centralManager = CBCentralManager(delegate: self, queue: nil, options: [CBCentralManagerOptionRestoreIdentifierKey : Device.centralRestoreIdentifier])
         
-        connectionIndicatorView.layer.backgroundColor = UIColor.redColor().CGColor
+        connectionIndicatorView.layer.backgroundColor = UIColor.red.cgColor
         connectionIndicatorView.layer.cornerRadius = connectionIndicatorView.frame.height / 2
     }
    
-    override func viewWillAppear(animated: Bool) {
+    override func viewWillAppear(_ animated: Bool) {
         self.textView.text = ""
         dataBuffer = NSMutableData()
     }
     
-    override func viewWillDisappear(animated: Bool) {
+    override func viewWillDisappear(_ animated: Bool) {
         stopScanning()
         scanAfterDisconnecting = false
         disconnect()
@@ -53,7 +53,7 @@ class CentralManagerViewController: UIViewController, CBCentralManagerDelegate, 
     
     // MARK: Handling User Interactions
     
-    @IBAction func handleDisconnectButtonTapped(sender: AnyObject) {
+    @IBAction func handleDisconnectButtonTapped(_ sender: AnyObject) {
         // if we are currently connected, then disconnect, otherwise start scanning again.
         if let _ = self.peripheral {
             scanAfterDisconnecting = false
@@ -75,7 +75,7 @@ class CentralManagerViewController: UIViewController, CBCentralManagerDelegate, 
             print("Central Manager is already scanning!!")
             return;
         }
-        centralManager.scanForPeripheralsWithServices([CBUUID.init(string: Device.TransferService)], options: [CBCentralManagerScanOptionAllowDuplicatesKey:true])
+        centralManager.scanForPeripherals(withServices: [CBUUID.init(string: Device.TransferService)], options: [CBCentralManagerScanOptionAllowDuplicatesKey:true])
         print("Scanning Started!")
     }
     
@@ -92,7 +92,7 @@ class CentralManagerViewController: UIViewController, CBCentralManagerDelegate, 
         }
         
         // check to see if the peripheral is connected
-        if peripheral.state != .Connected {
+        if peripheral.state != .connected {
             print("Peripheral exists but is not connected.")
             self.peripheral = nil
             return
@@ -109,10 +109,10 @@ class CentralManagerViewController: UIViewController, CBCentralManagerDelegate, 
             if let characteristics = service.characteristics {
                 for characteristic in characteristics {
                     // find the Transfer Characteristic we defined in our Device struct
-                    if characteristic.UUID == CBUUID.init(string: Device.TransferCharacteristic) {
+                    if characteristic.uuid == CBUUID.init(string: Device.TransferCharacteristic) {
                         // We can return after calling CBPeripheral.setNotifyValue because CBPeripheralDelegate's
                         // didUpdateNotificationStateForCharacteristic method will be called automatically
-                        peripheral.setNotifyValue(false, forCharacteristic: characteristic)
+                        peripheral.setNotifyValue(false, for: characteristic)
                         return
                     }
                 }
@@ -129,7 +129,7 @@ class CentralManagerViewController: UIViewController, CBCentralManagerDelegate, 
     
     // State Preservation and Restoration
     // This is the FIRST delegate method that will be called when being relaunched -- not centralManagerDidUpdateState
-    func centralManager(central: CBCentralManager, willRestoreState dict: [String : AnyObject]) {
+    func centralManager(_ central: CBCentralManager, willRestoreState dict: [String : Any]) {
         
         //---------------------------------------------------------------------------
         // We don't need these, but it's good to know that they exist.
@@ -171,12 +171,12 @@ class CentralManagerViewController: UIViewController, CBCentralManagerDelegate, 
      Invoked when the central manager’s state is updated.
      This is where we kick off the scanning if Bluetooth is turned on and is active.
      */
-    func centralManagerDidUpdateState(central: CBCentralManager) {
+    func centralManagerDidUpdateState(_ central: CBCentralManager) {
         print("Central Manager State Updated: \(central.state)")
         
         // We showed more detailed handling of this in Zero-to-BLE Part 2, so please refer to that if you would like more information.
         // We will just handle it the easy way here: if Bluetooth is on, proceed...
-        if central.state != .PoweredOn {
+        if central.state != .poweredOn {
             self.peripheral = nil
             return
         }
@@ -193,7 +193,7 @@ class CentralManagerViewController: UIViewController, CBCentralManagerDelegate, 
         }
 
         // see if that peripheral is connected
-        guard peripheral.state == .Connected else {
+        guard peripheral.state == .connected else {
             return
         }
 
@@ -206,22 +206,22 @@ class CentralManagerViewController: UIViewController, CBCentralManagerDelegate, 
         // (honestly, this may be overkill for our project but it demonstrates how to make this process more bulletproof...)
         // Also: Pardon the pyramid.
         let serviceUUID = CBUUID(string: Device.TransferService)
-        if let serviceIndex = peripheralServices.indexOf({$0.UUID == serviceUUID}) {
+        if let serviceIndex = peripheralServices.index(where: {$0.uuid == serviceUUID}) {
             // we have the service, but now we check to see if we have a characteristic that we've subscribed to...
             let transferService = peripheralServices[serviceIndex]
             let characteristicUUID = CBUUID(string: Device.TransferCharacteristic)
             if let characteristics = transferService.characteristics {
-                if let characteristicIndex = characteristics.indexOf({$0.UUID == characteristicUUID}) {
+                if let characteristicIndex = characteristics.index(where: {$0.uuid == characteristicUUID}) {
                     // Because this is a characteristic that we subscribe to in the standard workflow,
                     // we need to check if we are currently subscribed, and if not, then call the 
                     // setNotifyValue like we did before.
                     let characteristic = characteristics[characteristicIndex]
                     if !characteristic.isNotifying {
-                       peripheral.setNotifyValue(true, forCharacteristic: characteristic)
+                       peripheral.setNotifyValue(true, for: characteristic)
                     }
                 } else {
                     // if we have not discovered the characteristic yet, then call discoverCharacteristics, and the delegate method will get called as in the standard workflow...
-                    peripheral.discoverCharacteristics([characteristicUUID], forService: transferService)
+                    peripheral.discoverCharacteristics([characteristicUUID], for: transferService)
                 }
             }
         } else {
@@ -246,18 +246,18 @@ class CentralManagerViewController: UIViewController, CBCentralManagerDelegate, 
      RSSI - The current received signal strength indicator (RSSI) of the peripheral, in decibels.
 
      */
-    func centralManager(central: CBCentralManager, didDiscoverPeripheral peripheral: CBPeripheral, advertisementData: [String : AnyObject], RSSI: NSNumber) {
+    func centralManager(_ central: CBCentralManager, didDiscover peripheral: CBPeripheral, advertisementData: [String : Any], rssi RSSI: NSNumber) {
         print("Discovered \(peripheral.name) at \(RSSI)")
         rssiLabel.text = RSSI.stringValue
         
         // Reject if the signal strength is too low to be close enough ("close" is around -22dB)
-        if RSSI.integerValue < -35 {
-            rssiLabel.textColor = UIColor.redColor()
+        if RSSI.intValue < -35 {
+            rssiLabel.textColor = UIColor.red
             return;
         }
         
         print("Device is in acceptable range!!")
-        rssiLabel.textColor = UIColor.greenColor()
+        rssiLabel.textColor = UIColor.green
         
         // check to see if we've already saved a reference to this peripheral
         if self.peripheral != peripheral {
@@ -267,7 +267,7 @@ class CentralManagerViewController: UIViewController, CBCentralManagerDelegate, 
             
             // connect to the peripheral
             print("Connecting to peripheral: \(peripheral)")
-            centralManager?.connectPeripheral(peripheral, options: nil)
+            centralManager?.connect(peripheral, options: nil)
         }
     }
     
@@ -278,10 +278,10 @@ class CentralManagerViewController: UIViewController, CBCentralManagerDelegate, 
      This method is invoked when a call to connectPeripheral:options: is successful.
      You typically implement this method to set the peripheral’s delegate and to discover its services.
      */
-    func centralManager(central: CBCentralManager, didConnectPeripheral peripheral: CBPeripheral) {
+    func centralManager(_ central: CBCentralManager, didConnect peripheral: CBPeripheral) {
         print("Peripheral Connected!!!")
         
-        connectionIndicatorView.layer.backgroundColor = UIColor.greenColor().CGColor
+        connectionIndicatorView.layer.backgroundColor = UIColor.green.cgColor
         
         // Stop scanning
         centralManager.stopScan()
@@ -307,9 +307,9 @@ class CentralManagerViewController: UIViewController, CBCentralManagerDelegate, 
      Because connection attempts do not time out, a failed connection usually indicates a transient issue,
      in which case you may attempt to connect to the peripheral again.
      */
-    func centralManager(central: CBCentralManager, didFailToConnectPeripheral peripheral: CBPeripheral, error: NSError?) {
+    func centralManager(_ central: CBCentralManager, didFailToConnect peripheral: CBPeripheral, error: Error?) {
         print("Failed to connect to \(peripheral) (\(error?.localizedDescription))")
-        connectionIndicatorView.layer.backgroundColor = UIColor.redColor().CGColor
+        connectionIndicatorView.layer.backgroundColor = UIColor.red.cgColor
         self.disconnect()
     }
     
@@ -323,10 +323,10 @@ class CentralManagerViewController: UIViewController, CBCentralManagerDelegate, 
      
      Note that when a peripheral is disconnected, all of its services, characteristics, and characteristic descriptors are invalidated.
      */
-    func centralManager(central: CBCentralManager, didDisconnectPeripheral peripheral: CBPeripheral, error: NSError?) {
+    func centralManager(_ central: CBCentralManager, didDisconnectPeripheral peripheral: CBPeripheral, error: Error?) {
         // set our reference to nil and start scanning again...
         print("Disconnected from Peripheral")
-        connectionIndicatorView.layer.backgroundColor = UIColor.redColor().CGColor
+        connectionIndicatorView.layer.backgroundColor = UIColor.red.cgColor
         self.peripheral = nil
         if scanAfterDisconnecting {
             startScanning()
@@ -347,7 +347,7 @@ class CentralManagerViewController: UIViewController, CBCentralManagerDelegate, 
      If unsuccessful, the error parameter returns the cause of the failure.
      */
     // When the specified services are discovered, the peripheral calls the peripheral:didDiscoverServices: method of its delegate object.
-    func peripheral(peripheral: CBPeripheral, didDiscoverServices error: NSError?) {
+    func peripheral(_ peripheral: CBPeripheral, didDiscoverServices error: Error?) {
         
         print("Discovered Services!!!")
 
@@ -363,9 +363,9 @@ class CentralManagerViewController: UIViewController, CBCentralManagerDelegate, 
                 print("Discovered service \(service)")
                 
                 // If we found either the transfer service, discover the transfer characteristic
-                if (service.UUID == CBUUID(string: Device.TransferService)) {
+                if (service.uuid == CBUUID(string: Device.TransferService)) {
                     let transferCharacteristicUUID = CBUUID.init(string: Device.TransferCharacteristic)
-                    peripheral.discoverCharacteristics([transferCharacteristicUUID], forService: service)
+                    peripheral.discoverCharacteristics([transferCharacteristicUUID], for: service)
                 }
             }
         }
@@ -380,7 +380,7 @@ class CentralManagerViewController: UIViewController, CBCentralManagerDelegate, 
      If successful, the error parameter is nil.
      If unsuccessful, the error parameter returns the cause of the failure.
      */
-    func peripheral(peripheral: CBPeripheral, didDiscoverCharacteristicsForService service: CBService, error: NSError?) {
+    func peripheral(_ peripheral: CBPeripheral, didDiscoverCharacteristicsFor service: CBService, error: Error?) {
         if error != nil {
             print("Error discovering characteristics: \(error?.localizedDescription)")
             return
@@ -389,9 +389,9 @@ class CentralManagerViewController: UIViewController, CBCentralManagerDelegate, 
         if let characteristics = service.characteristics {
             for characteristic in characteristics {
                 // Transfer Characteristic
-                if characteristic.UUID == CBUUID(string: Device.TransferCharacteristic) {
+                if characteristic.uuid == CBUUID(string: Device.TransferCharacteristic) {
                     // subscribe to dynamic changes
-                    peripheral.setNotifyValue(true, forCharacteristic: characteristic)
+                    peripheral.setNotifyValue(true, for: characteristic)
                 }
             }
         }
@@ -409,8 +409,8 @@ class CentralManagerViewController: UIViewController, CBCentralManagerDelegate, 
      If successful, the error parameter is nil.
      If unsuccessful, the error parameter returns the cause of the failure.
      */
-    func peripheral(peripheral: CBPeripheral, didUpdateValueForCharacteristic characteristic: CBCharacteristic, error: NSError?) {
-        print("didUpdateValueForCharacteristic: \(NSDate())")
+    func peripheral(_ peripheral: CBPeripheral, didUpdateValueFor characteristic: CBCharacteristic, error: Error?) {
+        print("didUpdateValueForCharacteristic: \(Date())")
         1
         // if there was an error then print it and bail out
         if error != nil {
@@ -424,10 +424,10 @@ class CentralManagerViewController: UIViewController, CBCentralManagerDelegate, 
             return
         }
         
-        print("Bytes transferred: \(value.length)")
+        print("Bytes transferred: \(value.count)")
         
         // make sure we have a characteristic value
-        guard let nextChunk = String(data: value, encoding: NSUTF8StringEncoding) else {
+        guard let nextChunk = String(data: value, encoding: String.Encoding.utf8) else {
             print("Next chunk of data is nil.")
             return
         }
@@ -436,7 +436,7 @@ class CentralManagerViewController: UIViewController, CBCentralManagerDelegate, 
         
         // If we get the EOM tag, we fill the text view
         if (nextChunk == Device.EOM) {
-            if let message = String(data: dataBuffer, encoding: NSUTF8StringEncoding) {
+            if let message = String(data: dataBuffer as Data, encoding: String.Encoding.utf8) {
                 textView.text = message
                 print("Final message: \(message)")
                 
@@ -444,10 +444,10 @@ class CentralManagerViewController: UIViewController, CBCentralManagerDelegate, 
                 dataBuffer.length = 0
             }
         } else {
-            dataBuffer.appendData(value)
+            dataBuffer.append(value)
             print("Next chunk received: \(nextChunk)")
             if let buffer = self.dataBuffer {
-                print("Transfer buffer: \(String(data: buffer, encoding: NSUTF8StringEncoding))")
+                print("Transfer buffer: \(String(data: buffer as Data, encoding: String.Encoding.utf8))")
             }
         }
     }
@@ -460,7 +460,7 @@ class CentralManagerViewController: UIViewController, CBCentralManagerDelegate, 
      If successful, the error parameter is nil.
      If unsuccessful, the error parameter returns the cause of the failure.
      */
-    func peripheral(peripheral: CBPeripheral, didUpdateNotificationStateForCharacteristic characteristic: CBCharacteristic, error: NSError?) {
+    func peripheral(_ peripheral: CBPeripheral, didUpdateNotificationStateFor characteristic: CBCharacteristic, error: Error?) {
         // if there was an error then print it and bail out
         if error != nil {
             print("Error changing notification state: \(error?.localizedDescription)")
